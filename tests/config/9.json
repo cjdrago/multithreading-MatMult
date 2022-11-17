@@ -1,0 +1,9 @@
+{
+    "binary": 0,
+    "filename": 9,
+    "matrixsize": 1600,
+    "timeout": 40,
+    "seed": 10000223,
+    "description": "large matrix multiplication 4 (smaller than ${matrixsize} * ${matrixsize}, ${timeout} sec timeout)",
+    "preparation": "cat ${filename} > /dev/null"
+}
