@@ -11,7 +11,7 @@ int **createMat(int row, int col);
 void printMat(int row, int col, int **mat);
 int **splitMult(int indexA, int indexB, int ***splitA, int ***splitB);
 int **matPlus(int **matX, int **matY);
-
+int **checkEvenMat(int **mat, int n, int m);
 struct arg_struct {
     int ***A;
     int ***B;
@@ -27,7 +27,6 @@ void *sumMult(void *args)
 {
     
     struct arg_struct *data = args;
-    
 
     for(int c=0; c<data->m*data->n/4; c++) {
         data->C[c][0][0] = 0;
@@ -37,29 +36,14 @@ void *sumMult(void *args)
 
         int j = c%(data->m/2);
         int i = (c - j)/(data->m/2);
-
-        for(int k=0; k,data->p/2; k++) {
-            
+        for(int k=0; k < data->p/2; k++) {
+            data->C[c] = matPlus(data->C[c],
+                        splitMult(i*data->p/2+k, k*data->m/2+j, 
+                        data->A, data->B));
         }
     };
-    printf("dbasjkdas");
-    
-
-    
-
-    // int x = data[0];
-    // for (i = 1; i <= x; i++)
-    //     k += data[i] * data[i + x];
-
-    // int *p = (int *)malloc(sizeof(int));
-    // *p = k;
-
-    // // Used to terminate a thread and the return value is passed as a pointer
-     
-//Used to terminate a thread and the return value is passed as a pointer
     pthread_exit(data->C);
 };
-
 
 
 
@@ -76,13 +60,21 @@ int main(int argc, char **argv)
            get_nprocs_conf(), get_nprocs());
 
     int **matA= createMat(n, p);
-    printMat(n, p, matA);
-
     int **matB = createMat(p, m);
-    printMat(p, m, matB);
 
-    int ***splitA = divMat(n, p, matA);
-    int ***splitB = divMat(p, m, matB);
+    int **evenA = checkEvenMat(matA, n, p);
+    int **evenB = checkEvenMat(matB, p, m);
+
+    int orgN = n;
+    int orgM = m;
+    
+    n = n+n%2;
+    p = p+p%2;
+    m = m+m%2;
+
+
+    int ***splitA = divMat(n, p, evenA);
+    int ***splitB = divMat(p, m, evenB);
 
     int i, j, k;
     int max = (n * m)/4;
@@ -131,29 +123,71 @@ int main(int argc, char **argv)
     args.p = p;
     args.m = m;
 
-
-
     // creating threads
-    pthread_create(&threads[count++], NULL, sumMult,  (void *)&args);
+
     
+    for(int i = 0; i < max; i++)
+        pthread_create(&threads[i], NULL, sumMult,  (void *)&args);
+    for(int i = 0; i < max; i++)
+        pthread_join(threads[i], NULL);
+
+    int **retMatC;
+
+    retMatC = malloc(sizeof(int *)*n);
+    for(int row = 0; row<n; row++)
+        retMatC[row] = malloc(sizeof(int)*m);
+
+    k = 0;
+    for (int i = 0; i < n; i = i + 2){
+        for (int j = 0; j < m; j = j + 2){
+            for (int x = 0; x < 2; x++)
+                for (int y = 0; y < 2; y++)
+                {
+
+                    retMatC[i+x][j+y] = args.C[k][x][y];
+                }
+            k++;
+        }
+    };
+
+    int **retMatCFinal;
+
+    retMatCFinal = malloc(sizeof(int *)*orgN);
+    for(int row = 0; row<orgN; row++)
+        retMatCFinal[row] = malloc(sizeof(int)*orgM);
+
+    for (int i = 0; i < orgN; i++)
+        for (int j = 0; j < orgM; j++)
+            retMatCFinal[i][j] = retMatC[i][j];
 
 
-    // printf("RESULTANT MATRIX IS :- \n");
-    // for (i = 0; i < max; i++)
-    // {
-    //     void *k;
-
-    //     // Joining all threads and collecting return value
-        pthread_join(threads[count++], NULL);
-
-    //     int *p = (int *)k;
-    //     printf("%d ", *p);
-    //     if ((i + 1) % m == 0)
-    //         printf("\n");
-    // };
+    printMat(orgN,orgM, retMatCFinal);
+    
 
     return 0;
 };
+
+
+int **checkEvenMat(int **mat, int n, int m){
+
+    int row = n + n%2;
+    int col = m + m%2;
+    int **evenMat;
+    evenMat = malloc(sizeof(int *)*row);
+    for(int i =0; i<row; i++)
+        evenMat[i] = malloc(sizeof(int)*col);
+
+    for(int i = 0; i<row; i++)
+        for(int j =0; j<col; j++){
+            if(i >= n || j >= m) evenMat[i][j] = 0;
+            else evenMat[i][j] = mat[i][j];
+
+        };
+
+
+    return evenMat;
+}
+
 
 int **splitMult(int indexA, int indexB, int ***splitA, int ***splitB){
     int **retMat;
@@ -165,11 +199,11 @@ int **splitMult(int indexA, int indexB, int ***splitA, int ***splitB){
 
     retMat[0][0] = splitA[indexA][0][0]*splitB[indexB][0][0] + splitA[indexA][0][1]*splitB[indexB][1][0];
 
-    retMat[0][1] = splitA[indexA][0][0]*splitB[indexB][1][0] + splitA[indexA][0][1]*splitB[indexB][1][1];
+    retMat[0][1] = splitA[indexA][0][0]*splitB[indexB][0][1] + splitA[indexA][0][1]*splitB[indexB][1][1];
 
-    retMat[1][0] = splitA[indexA][0][1]*splitB[indexB][0][0] + splitA[indexA][1][1]*splitB[indexB][1][0];
+    retMat[1][0] = splitA[indexA][1][0]*splitB[indexB][0][0] + splitA[indexA][1][1]*splitB[indexB][1][0];
 
-    retMat[1][1] = splitA[indexA][0][1]*splitB[indexB][1][0] + splitA[indexA][1][1]*splitB[indexB][1][1];
+    retMat[1][1] = splitA[indexA][1][0]*splitB[indexB][0][1] + splitA[indexA][1][1]*splitB[indexB][1][1];
 
     return retMat;
 
