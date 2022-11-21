@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <math.h>
 
-int MAX_LINE_LENGTH = 1000 * 1000;
+int MAX_LINE_LENGTH = 1000;
 int checkLineMax(int num1, int num2)
 {
     int max = ((num1 > MAX_LINE_LENGTH || num2 > MAX_LINE_LENGTH)) ? MAX_LINE_LENGTH * MAX_LINE_LENGTH : MAX_LINE_LENGTH;
