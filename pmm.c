@@ -8,7 +8,7 @@
 #include <string.h>
 #include <math.h>
 
-int MAX_LINE_LENGTH = 1000;
+int MAX_LINE_LENGTH = 1000*1000;
 
 int ***divMat(int row, int col, int **mat);
 int **createMat(int row, int col);
@@ -56,11 +56,6 @@ void *sumMult(void *args)
 
 int main(int argc, char **argv)
 {
-    printf("\nThis system has %d processors configured and "
-           "%d processors available.\n \n",
-           get_nprocs_conf(), get_nprocs());
-
-
     FILE *textfile;
     char line[MAX_LINE_LENGTH];
     char firstLine[MAX_LINE_LENGTH];
@@ -201,7 +196,6 @@ int main(int argc, char **argv)
 
 
     printMat(orgN,orgM, retMatCFinal);
-    
 
     return 0;
 };
@@ -284,7 +278,6 @@ int **createMat(int row, int col)
 
 void printMat(int row, int col, int **mat)
 {
-    printf("mat %d x %d: \n", row, col);
     for (int i = 0; i < row; i++)
     {
         for (int j = 0; j < col; j++)
