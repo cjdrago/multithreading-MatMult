@@ -11,7 +11,6 @@
 int MAX_LINE_LENGTH = 1000*1000;
 
 int ***divMat(int row, int col, int **mat);
-int **createMat(int row, int col);
 void printMat(int row, int col, int **mat);
 int **splitMult(int indexA, int indexB, int ***splitA, int ***splitB);
 int **matPlus(int **matX, int **matY);
@@ -56,45 +55,31 @@ void *sumMult(void *args)
 
 int main(int argc, char **argv)
 {
-    FILE *textfile;
-    char line[MAX_LINE_LENGTH];
-    char firstLine[MAX_LINE_LENGTH];
+    char input[10];
 
-    textfile = fopen(argv[1], "r");
-    if (textfile == NULL)
-        return 1;
-
-    fscanf(textfile, "%[^\n]", firstLine);
-    int n = atoi(strtok(firstLine, "\t"));
-    int p = atoi(strtok(NULL, "\t"));
-    int m = atoi(strtok(NULL, "\t"));
-
-    MAX_LINE_LENGTH = checkLineMax(n, p);
-
-
+    scanf("%s", input);
+    int n = atoi(input);
+    scanf("%s", input);
+    int p = atoi(input);
+    scanf("%s", input);
+    int m = atoi(input);
+    
     int **matA, **matB;
     matA = allocateMat(matA, n, p);
     matB = allocateMat(matB, p, m);
 
-    int rowIndxA= 0, rowIndexB = 0, step = 0;
-    while (fgets(line, MAX_LINE_LENGTH, textfile))
-    {
-        if(step > 0 && rowIndxA < n){
-            for (int j = 0; j < p; j++){
-                if (j == 0) matA[rowIndxA][j] = atoi(strtok(line, "\t"));
-                else matA[rowIndxA][j] = atoi(strtok(NULL, "\t"));
-            };
-            rowIndxA++;
+    for(int i = 0; i<n; i++)
+        for(int j = 0; j<p; j++){
+            scanf("%s", input);
+            matA[i][j] = atoi(input);
         }
-        else if (step > n){
-                for (int j = 0; j < m; j++){
-                    if (j == 0) matB[rowIndexB][j] = atoi(strtok(line, "\t"));
-                    else matB[rowIndexB][j] = atoi(strtok(NULL, "\t"));
-                };
-                rowIndexB++;        }
-        step++;
-    }
-    fclose(textfile);    
+
+    for(int i = 0; i<p; i++)
+        for(int j = 0; j<m; j++){
+            scanf("%s", input);
+            matB[i][j] = atoi(input);
+        }
+               
 
     int **evenA = checkEvenMat(matA, n, p);
     int **evenB = checkEvenMat(matB, p, m);
@@ -113,7 +98,6 @@ int main(int argc, char **argv)
     int i, j, k;
     int max = (n * m)/4;
 
-    // declaring array of threads of size n*m
     pthread_t *threads;
     threads = (pthread_t *)malloc(max * sizeof(pthread_t));
 
@@ -158,8 +142,6 @@ int main(int argc, char **argv)
     args.m = m;
 
     // creating threads
-
-    
     for(int i = 0; i < max; i++)
         pthread_create(&threads[i], NULL, sumMult,  (void *)&args);
     for(int i = 0; i < max; i++)
@@ -259,22 +241,7 @@ int **matPlus(int **matX, int **matY) {
 
 }
 
-int **createMat(int row, int col)
-{
 
-    int **matrix;
-
-    matrix = malloc(sizeof(int *) * row);
-
-    for (int i = 0; i < col; i++)
-        matrix[i] = malloc(sizeof(int) * col);
-
-    for (int i = 0; i < row; i++)
-        for (int j = 0; j < col; j++)
-            matrix[i][j] = rand() % 10;
-
-    return matrix;
-};
 
 void printMat(int row, int col, int **mat)
 {
