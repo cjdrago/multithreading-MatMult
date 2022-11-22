@@ -8,7 +8,7 @@
 #include <string.h>
 #include <math.h>
 
-int MAX_LINE_LENGTH = 1000*1000;
+int MAX_LINE_LENGTH = 1000;
 
 int ***divMat(int row, int col, int **mat);
 void printMat(int row, int col, int **mat);
@@ -16,10 +16,12 @@ int **splitMult(int indexA, int indexB, int ***splitA, int ***splitB);
 int **matPlus(int **matX, int **matY);
 int **checkEvenMat(int **mat, int n, int m);
 int **allocateMat(int **mat, int rows, int cols);
-int checkLineMax(int num1, int num2);
-
+void *sumMult(void *args);
 
 struct arg_struct {
+    /*
+        Struct with the arguments that the pthread function will recieve as parameters when executing
+    */
     int ***A;
     int ***B;
     int ***C;
@@ -27,31 +29,6 @@ struct arg_struct {
     int p;
     int m;
 }args;
-
-
-// Each thread computes single element in the resultant matrix
-void *sumMult(void *args)
-{
-    
-    struct arg_struct *data = args;
-
-    for(int c=0; c<data->m*data->n/4; c++) {
-        data->C[c][0][0] = 0;
-        data->C[c][0][1] = 0;
-        data->C[c][1][0] = 0;
-        data->C[c][1][1] = 0;
-
-        int j = c%(data->m/2);
-        int i = (c - j)/(data->m/2);
-        for(int k=0; k < data->p/2; k++) {
-            data->C[c] = matPlus(data->C[c],
-                        splitMult(i*data->p/2+k, k*data->m/2+j, 
-                        data->A, data->B));
-        }
-    };
-    pthread_exit(data->C);
-};
-
 
 int main(int argc, char **argv)
 {
@@ -81,6 +58,11 @@ int main(int argc, char **argv)
         }
                
 
+
+    /*
+        Make matrix A and B and even matrix in terms of columns and rows. 
+        We do it by adding a zero column or row where we need 
+    */ 
     int **evenA = checkEvenMat(matA, n, p);
     int **evenB = checkEvenMat(matB, p, m);
 
@@ -92,6 +74,10 @@ int main(int argc, char **argv)
     m = m+m%2;
 
 
+    /*
+        Split even matrix A and B into a 3D array of 
+        2x2 matrix.
+    */
     int ***splitA = divMat(n, p, evenA);
     int ***splitB = divMat(p, m, evenB);
 
@@ -105,7 +91,13 @@ int main(int argc, char **argv)
     int ***splitC = NULL;
 
 
-    splitC= (int***)malloc(max* sizeof(int**));
+    /*
+        Creation  and memory allocation of a 3D array split matrix C that will store
+        the multiplication of 2x2 matrices from split A and B.
+        Afterwards, we will have to join split matrix C and translate 
+        it into a 2D matrix with dimensions NxM
+    */
+    splitC = (int***)malloc(max* sizeof(int**));
  
     if (splitC == NULL)
     {
@@ -141,7 +133,7 @@ int main(int argc, char **argv)
     args.p = p;
     args.m = m;
 
-    // creating threads
+    // Creation of threads and join of them
     for(int i = 0; i < max; i++)
         pthread_create(&threads[i], NULL, sumMult,  (void *)&args);
     for(int i = 0; i < max; i++)
@@ -307,8 +299,25 @@ int **allocateMat(int **mat, int rows, int cols){
     return mat;
 }
 
-int checkLineMax(int num1, int num2)
+
+void *sumMult(void *args)
 {
-    int max = ((num1 > MAX_LINE_LENGTH || num2 > MAX_LINE_LENGTH)) ? MAX_LINE_LENGTH * MAX_LINE_LENGTH : MAX_LINE_LENGTH;
-    return max;
+    
+    struct arg_struct *data = args;
+
+    for(int c=0; c<data->m*data->n/4; c++) {
+        data->C[c][0][0] = 0;
+        data->C[c][0][1] = 0;
+        data->C[c][1][0] = 0;
+        data->C[c][1][1] = 0;
+
+        int j = c%(data->m/2);
+        int i = (c - j)/(data->m/2);
+        for(int k=0; k < data->p/2; k++) {
+            data->C[c] = matPlus(data->C[c],
+                        splitMult(i*data->p/2+k, k*data->m/2+j, 
+                        data->A, data->B));
+        }
+    };
+    pthread_exit(data->C);
 };
